@@ -109,24 +109,21 @@ Open `COMPLETE-INVOICE-SYSTEM.html` and add these scripts **before** the closing
 
 ### **Step 2: Configure Your Google Client ID**
 
-In this invoice system, the recommended approach is to use the in-app **Setup Wizard** (click **Sync Google** in the header) to save your OAuth Client ID. You generally do **not** need to manually edit `google-drive-sync.js`.
+Recommended: connect inside the app.
 
-Open `google-drive-sync.js` and replace these lines (around line 16-17):
+1. Open the invoice system
+2. Click **“🔗 Sync Google”** in the header
+3. The app shows the exact **Authorized JavaScript origin** you must add (copy button)
+4. Paste your **OAuth Client ID** once
+5. Click **“Connect Google”** → a Google sign-in popup appears → accept permissions → done
 
-```javascript
-this.CLIENT_ID = 'YOUR_CLIENT_ID_HERE'; // Replace with your OAuth Client ID
-this.API_KEY = 'YOUR_API_KEY_HERE'; // Replace with your API Key (optional)
-```
+The Client ID is saved to browser storage, so next time it’s just: **Sync Google → popup login → done**.
 
-**Replace with:**
-```javascript
-this.CLIENT_ID = '123456789-abcdefghijklmnop.apps.googleusercontent.com'; // Your actual Client ID
-this.API_KEY = ''; // Leave empty for now (not required for OAuth)
-```
+Manual editing of `google-drive-sync.js` is optional and generally not needed.
 
 ### **Step 3: Add Single-Click Sync UI to Your Invoice System**
 
-Add this HTML to your header section (around line 86-90 in COMPLETE-INVOICE-SYSTEM.html):
+The header already includes a single “Sync Google” button and a sync status label.
 
 ```html
 <div class="header-actions">
@@ -181,7 +178,7 @@ invoices = await driveStorage.getItem('aweh_invoices', []);
 ### **Step 1: Test Locally**
 
 1. Open `COMPLETE-INVOICE-SYSTEM.html` in your browser
-2. You should see **"Sign in with Google"** button
+2. You should see **"🔗 Sync Google"** in the header
 3. Click the button
 4. Google sign-in popup should appear
 5. Sign in with your Google account

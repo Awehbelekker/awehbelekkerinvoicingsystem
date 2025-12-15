@@ -1988,6 +1988,66 @@ Table View, Cape Town
         </div>
     </div>
 
+    <!-- Quick Google Sync Setup (Minimal) -->
+    <div id="quickGoogleSetupModal" class="modal" role="dialog" aria-labelledby="quickGoogleSetupTitle" aria-modal="true">
+        <div class="modal-content wizard-modal">
+            <div class="wizard-header">
+                <h2 id="quickGoogleSetupTitle">🔗 Connect Google Drive</h2>
+                <p style="opacity: 0.9; margin-top: 0.5rem;">One-time setup: paste your Client ID, then sign in.</p>
+            </div>
+
+            <div class="wizard-content">
+                <div class="wizard-instruction">
+                    <h4>📝 What you need (one time)</h4>
+                    <ol>
+                        <li>Create an <strong>OAuth Client ID</strong> in Google Cloud (Web application)</li>
+                        <li>Add this as an <strong>Authorized JavaScript origin</strong>:</li>
+                    </ol>
+                    <div class="wizard-copy-box">
+                        <input type="text" readonly id="quickOriginCopy" value="">
+                        <button class="wizard-copy-btn" onclick="copyToClipboard('quickOriginCopy')">📋 Copy</button>
+                    </div>
+                    <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="wizard-link-btn">
+                        🌐 Open Google Credentials
+                    </a>
+                </div>
+
+                <div class="wizard-validation" id="quickClientIdValidation" style="margin-top: 1rem;">
+                    <label class="form-label" style="margin-bottom: 0.5rem; display: block;">
+                        <strong>Your OAuth Client ID:</strong>
+                    </label>
+                    <input
+                        type="text"
+                        id="quickClientIdInput"
+                        placeholder="123456789-abcdefghijklmnop.apps.googleusercontent.com"
+                        oninput="validateQuickClientId(this.value)"
+                    >
+                    <div class="wizard-validation-msg success">
+                        ✅ Looks good. Click “Connect Google”.
+                    </div>
+                    <div class="wizard-validation-msg error">
+                        ❌ Invalid format. Client ID should end with .apps.googleusercontent.com
+                    </div>
+                </div>
+
+                <button class="btn btn-primary u-mt-1" onclick="quickConnectGoogleDrive()" id="quickConnectBtn" disabled>
+                    🔗 Connect Google
+                </button>
+
+                <div id="quickConnectionResult" class="u-mt-1 is-hidden"></div>
+
+                <div class="wizard-alert" style="margin-top: 1rem;">
+                    <strong>After this:</strong> the header button becomes “Sync Google” → popup login → done.
+                </div>
+            </div>
+
+            <div class="wizard-footer">
+                <button class="btn btn-outline" onclick="openSetupWizard()">Need help? Full wizard</button>
+                <button class="btn btn-outline" onclick="closeModal('quickGoogleSetupModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Create/Edit Invoice Modal -->
     <div id="invoiceModal" class="modal" role="dialog" aria-labelledby="invoiceModalTitle" aria-modal="true">
         <div class="modal-content">
@@ -3565,6 +3625,26 @@ ${settings.email}`;
             openModal('setupWizardModal');
         }
 
+        function openQuickGoogleSetup() {
+            const originInput = document.getElementById('quickOriginCopy');
+            if (originInput) originInput.value = location.origin;
+
+            const input = document.getElementById('quickClientIdInput');
+            if (input) {
+                input.value = localStorage.getItem('google_drive_client_id') || '';
+                validateQuickClientId(input.value);
+            }
+
+            const resultDiv = document.getElementById('quickConnectionResult');
+            if (resultDiv) {
+                resultDiv.classList.add('is-hidden');
+                resultDiv.style.display = 'none';
+                resultDiv.innerHTML = '';
+            }
+
+            openModal('quickGoogleSetupModal');
+        }
+
         async function syncGoogle() {
             try {
                 if (typeof driveStorage === 'undefined') {
@@ -3574,9 +3654,9 @@ ${settings.email}`;
                     return;
                 }
 
-                // If not configured yet, open the setup wizard (simple path for the user)
+                // If not configured yet, show the minimal setup first (Client ID once)
                 if (!driveStorage.isClientConfigured || !driveStorage.isClientConfigured()) {
-                    openSetupWizard();
+                    openQuickGoogleSetup();
                     return;
                 }
 
@@ -3607,6 +3687,105 @@ ${settings.email}`;
                     driveStorage.updateSyncStatus(`❌ Google sync failed: ${error?.message || error}`, 'error');
                 } else if (typeof showToast === 'function') {
                     showToast(`Google sync failed: ${error?.message || error}`, 'error');
+                }
+            }
+        }
+
+        function validateQuickClientId(clientId) {
+            const validation = document.getElementById('quickClientIdValidation');
+            const connectBtn = document.getElementById('quickConnectBtn');
+
+            const isValid = clientId.trim().length > 0 &&
+                           clientId.includes('-') &&
+                           clientId.endsWith('.apps.googleusercontent.com');
+
+            if (isValid) {
+                validation?.classList.remove('invalid');
+                validation?.classList.add('valid');
+                if (connectBtn) connectBtn.disabled = false;
+            } else {
+                validation?.classList.remove('valid');
+                validation?.classList.add('invalid');
+                if (connectBtn) connectBtn.disabled = true;
+            }
+        }
+
+        async function quickConnectGoogleDrive() {
+            const clientId = document.getElementById('quickClientIdInput')?.value?.trim() || '';
+            const resultDiv = document.getElementById('quickConnectionResult');
+            const connectBtn = document.getElementById('quickConnectBtn');
+
+            if (!clientId) {
+                showToast('Please enter your Client ID first', 'error');
+                return;
+            }
+
+            if (connectBtn) {
+                connectBtn.disabled = true;
+                connectBtn.textContent = '🔄 Connecting...';
+            }
+            if (resultDiv) {
+                resultDiv.classList.remove('is-hidden');
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<div class="wizard-alert">⏳ Opening Google sign-in...</div>';
+            }
+
+            try {
+                if (typeof driveStorage === 'undefined') {
+                    throw new Error('Google Drive module not loaded');
+                }
+
+                driveStorage.CLIENT_ID = clientId;
+
+                // Force a clean init if the module initialized with a placeholder
+                if (driveStorage._initPromise) {
+                    driveStorage._initPromise = null;
+                }
+                if ('tokenClient' in driveStorage) {
+                    driveStorage.tokenClient = null;
+                }
+
+                localStorage.setItem('google_drive_client_id', clientId);
+
+                await driveStorage.init();
+                await driveStorage.signIn();
+
+                if (resultDiv) {
+                    resultDiv.innerHTML = `
+                        <div class="wizard-success">
+                            <h3>✅ Connected!</h3>
+                            <p style="margin-top: 0.5rem;">Google Drive is ready. Click “Sync Google” any time.</p>
+                        </div>
+                    `;
+                }
+
+                const syncGoogleBtn = document.getElementById('syncGoogleBtn');
+                if (syncGoogleBtn) syncGoogleBtn.style.animation = '';
+
+                showToast('✅ Google Drive connected', 'success');
+                closeModal('quickGoogleSetupModal');
+            } catch (error) {
+                console.error('quickConnectGoogleDrive failed:', error);
+                if (resultDiv) {
+                    resultDiv.classList.remove('is-hidden');
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = `
+                        <div class="wizard-alert">
+                            <strong>⚠️ Connection Failed</strong><br>
+                            <p style="margin-top: 0.5rem;">${error?.message || error}</p>
+                            <p style="margin-top: 0.5rem; font-size: 0.9rem;">
+                                <strong>Fix:</strong><br>
+                                • In Google Cloud → OAuth Client → add this origin: <strong>${location.origin}</strong><br>
+                                • Then try again
+                            </p>
+                        </div>
+                    `;
+                }
+                showToast('Connection failed. Check the message.', 'error');
+            } finally {
+                if (connectBtn) {
+                    connectBtn.disabled = false;
+                    connectBtn.textContent = '🔗 Connect Google';
                 }
             }
         }

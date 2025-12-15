@@ -9,9 +9,9 @@ I've successfully integrated Google Drive cloud storage into your invoice system
 2. ✅ **google-drive-sync.js** - Created (cloud storage module)
 
 ### **Features Added:**
-1. ✅ Google Sign-In/Sign-Out buttons in header
+1. ✅ One-click **Sync Google** button in header
 2. ✅ Sync status indicator
-3. ✅ "Sync Now" button for manual sync
+3. ✅ One-time in-app setup (paste Client ID once)
 4. ✅ Automatic cloud sync for all data (invoices, customers, products, settings)
 5. ✅ Offline support with automatic sync when back online
 6. ✅ Hybrid storage (localStorage + Google Drive)
@@ -29,32 +29,24 @@ You need to set up a Google Cloud project to get your OAuth Client ID. Follow th
 3. Enable Google Drive API
 4. Create OAuth 2.0 credentials (Web application)
 5. Add authorized JavaScript origins:
-   - `http://localhost`
-   - `http://localhost:8000`
-   - `file://` (for local HTML file)
+   - The exact origin shown inside the app when you click **Sync Google** (it will show a copy button)
 6. Copy your **Client ID** (looks like: `123456789-abc...xyz.apps.googleusercontent.com`)
 
 **Detailed instructions:** See `GOOGLE-DRIVE-SETUP-GUIDE.md`
 
-### **Step 2: Update google-drive-sync.js**
+### **Step 2: Connect in the App (Recommended)**
 
-Open `google-drive-sync.js` and replace line 16:
-
-```javascript
-this.CLIENT_ID = 'YOUR_CLIENT_ID_HERE';
-```
-
-With your actual Client ID:
-
-```javascript
-this.CLIENT_ID = '123456789-abcdefghijklmnop.apps.googleusercontent.com';
-```
+1. Open the app
+2. Click **"🔗 Sync Google"** in the header
+3. Paste your **Client ID**
+4. Click **"Connect Google"**
+5. A Google popup will open → accept permissions → done
 
 ### **Step 3: Test It!**
 
 1. Open `COMPLETE-INVOICE-SYSTEM.html` in your browser
-2. You should see a **"Sign in with Google"** button in the header
-3. Click it and sign in with your Google account
+2. Click **"Sync Google"** in the header
+3. If not connected yet, you’ll be asked for Client ID once, then Google sign-in opens
 4. Grant permission to access Google Drive
 5. Status should change to **"☁️ Synced with Google Drive"**
 6. Create a test invoice - it will automatically sync to Google Drive!
@@ -99,12 +91,12 @@ All your invoices, customers, products, and settings will be uploaded to Google 
 
 ### **Header (Top Right):**
 ```
-[💾 Local storage] [Sign in with Google] [⚙️ Settings] [📤 Import] [📥 Export] [➕ New Invoice]
+[💾 Local storage] [🔗 Sync Google] [⚙️ Settings] [📤 Import] [📥 Export] [➕ New Invoice]
 ```
 
-**After signing in:**
+**After connecting/signing in:**
 ```
-[☁️ Synced with Google Drive] [Sign Out] [🔄 Sync Now] [⚙️ Settings] [📤 Import] [📥 Export] [➕ New Invoice]
+[☁️ Synced with Google Drive] [Sign Out] [🔄 Sync Google] [⚙️ Settings] [📤 Import] [📥 Export] [➕ New Invoice]
 ```
 
 ---
